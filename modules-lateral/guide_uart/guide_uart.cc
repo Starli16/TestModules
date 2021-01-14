@@ -1,4 +1,4 @@
-#include "uart_client.h"
+#include "guide_uart.h"
 
 #include <cstdio>
 #include <iostream>
@@ -8,42 +8,39 @@ using std::cout;
 using std::endl;
 using namespace std;
 
-bool UartClient::Init() {
+bool guide_Uart::Init() {
   memset(uart_buf,0,sizeof(uart_buf));
-  uart_dev.SetOpt(115200, 8, 'N' ,1);
+  uart_dev.SetOpt(9600, 8, 'N' ,1);
   is_running=0;
+  Start();
   return true;
 }
 
-bool UartClient::GetData(char *data) {  // Timer callback
+bool guide_Uart::Proc() {  // Timer callback
   {
     std::lock_guard<mutex> guard(uart_mutex);
-    strcpy(data,uart_buf);
+    AINFO<<uart_buf;
   }
   return true;
 }
-void UartClient::Close() {  // shutdown
+void guide_Uart::Clear() {  // shutdown
   is_running=0;
 }
-void UartClient::Start(){
+void guide_Uart::Start(){
   is_running=1;
   AINFO<<"Uart Started";
-  auto async_result_ = Async(&UartClient::RecvThreadFunc, this);
+  auto async_result_ = Async(&guide_Uart::RecvThreadFunc, this);
 }
-void UartClient::RecvThreadFunc(){
+void guide_Uart::RecvThreadFunc(){
   while(is_running){
     {
       char buf[BUFF_LENGTH];
-      memset(buf,0,sizeof(buf));
-      if(uart_dev.Read(buf,sizeof(uart_buf)) >= 0)
+      uart_dev.Read(buf,sizeof(uart_buf));
       {
         std::lock_guard<mutex> guard(uart_mutex);
         strcpy(uart_buf,buf);
-      }else
-      {
-        AERROR << "Uart Read Error";
-        return;
       }
+      AINFO<<"ReadOK";
       Yield();
     }
   }

@@ -10,7 +10,7 @@ using namespace std;
 
 bool UartClient::Init() {
   memset(uart_buf,0,sizeof(uart_buf));
-  uart_dev.SetOpt(115200, 8, 'N' ,1);
+  uart_dev.SetOpt(9600, 8, 'N' ,1);
   is_running=0;
   return true;
 }
