@@ -117,7 +117,7 @@ double guide_Control::Curvity(double x1,double y1,double x2,double y2,double x3,
   double dis3 = sqrt((x2 - x3)*(x2 - x3) + (y2-y3)*(y2 - y3));
   double maxdis=std::max(std::max(dis1,dis2),dis3);
   double curvity=0;
-  if(maxdis == 0.5*(dis1+dis2+dis3) ){
+  if(std::abs (maxdis - 0.5*(dis1+dis2+dis3)) < 1E-6 ){
     return curvity = 0;
   }else{
     double dis = dis1*dis1 + dis3*dis3 - dis2*dis2;
@@ -125,6 +125,11 @@ double guide_Control::Curvity(double x1,double y1,double x2,double y2,double x3,
     double sinA = sqrt(1 - cosA*cosA);//求正弦
     double radius = 0.5*dis2/sinA;//正弦定理求外接圆半径
     curvity = 1/radius;
+    double a1,b1,a2,b2;
+    a1 = x2 - x1;b1 = y2 - y1;
+    a2 = x3 - x2;b2 = y3 - y2;
+    double sgn = a1*b2 - a2*b1;
+    if(sgn > 0) curvity=-curvity;
   }
   return curvity;
 }
@@ -132,9 +137,9 @@ double guide_Control::Curvity(double x1,double y1,double x2,double y2,double x3,
 float guide_Control::Caculate_steer(const std::shared_ptr<ChassisDetail>& msg0) {
   float frontwheel_steer_angle = 0;
   int lookahead_index= FindLookAheadPoint(5);
-  double curvity = Curvity(current_traj[0][lookahead_index-1],current_traj[1][lookahead_index-1],
+  double curvity = Curvity(current_traj[0][lookahead_index-10],current_traj[1][lookahead_index-10],
                       current_traj[0][lookahead_index],current_traj[1][lookahead_index],
-                      current_traj[0][lookahead_index+1],current_traj[1][lookahead_index+1]);
+                      current_traj[0][lookahead_index+10],current_traj[1][lookahead_index+10]);
   double lateral_error= current_traj[1][lookahead_index];
   double heading_angle_error = std::atan( (current_traj[1][lookahead_index]-current_traj[1][lookahead_index-1]) /
                                       (current_traj[0][lookahead_index]-current_traj[0][lookahead_index-1])) /M_PI*180;
