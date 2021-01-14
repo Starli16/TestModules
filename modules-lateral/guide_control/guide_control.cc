@@ -17,9 +17,9 @@ void guide_Control::ReadTraj() {
   traj_record_file.getline(linestr, 500);
   while (traj_record_file.getline(linestr, 500)) {
     std::stringstream ss(linestr);
-    std::string csvdata[17];
+    std::string csvdata[INFOLENGTH];
     double gps_latitude, gps_longitude,gps_azimuth;
-    for (int i = 0; i < 17; i++) {
+    for (int i = 0; i < INFOLENGTH; i++) {
       char tempdata[500] = {0};
       ss.getline(tempdata, 500, ',');
       csvdata[i] = std::string(tempdata);

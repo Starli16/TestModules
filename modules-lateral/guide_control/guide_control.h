@@ -19,7 +19,7 @@
 #define WORK_MODE 0
 #define RECORD_MODE 1
 #define REPLAY_MODE 2
-#define INFOLENGTH 3
+#define INFOLENGTH 4
 #define TRAJLENGTH 500
 #define MAXDIS 9999
 
