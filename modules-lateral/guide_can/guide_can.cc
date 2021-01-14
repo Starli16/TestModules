@@ -74,7 +74,7 @@ bool guide_Canbus::Proc() {  // Timer callback
 }
 void guide_Canbus::Clear() {  // shutdown
   if(Mode==RECORD_MODE){
-
+    traj_record_file.close();
   }
   uart_client.Close();
   guide_controller.Stop();
