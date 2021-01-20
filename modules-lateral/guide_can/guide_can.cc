@@ -49,6 +49,11 @@ bool guide_Canbus::Init() {
   }else if(Mode==REPLAY_MODE){
     can_receiver.Init(CanClient.get(), message_manager.get(), 1);
     can_receiver.Start();
+    traj_record_file.open("/apollo/modules/guide_can/data/gps_replay.csv",std::ios::out);
+    std::string msg_w =
+        "frame,gps_longitude,gps_latitude,gps_azimuth";
+    traj_record_file << msg_w<<std::endl;
+    AINFO<<"csv Created";
   }
   
   
@@ -120,6 +125,15 @@ void guide_Canbus::PublishChassisDetail() {
     
   }else if(Mode==REPLAY_MODE){
     chassis_detail_writer_->Write(sensordata);
+    if (frame == 65535) {
+      frame = 0;
+    }
+    frame++;
+    std::string msg_w=std::to_string(frame) + "," + 
+                  std::to_string(lat) + "," + 
+                  std::to_string(sensordata.gps_longitude()) + "," +
+                  std::to_string(sensordata.gps_azimuth());
+    traj_record_file<< msg_w <<std::endl ;
   }
   return;
 }

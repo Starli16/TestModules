@@ -20,7 +20,7 @@
 #define RECORD_MODE 1
 #define REPLAY_MODE 2
 #define INFOLENGTH 4
-#define TRAJLENGTH 500
+#define TRAJLENGTH 250
 #define MAXDIS 9999
 
 using apollo::canbus::ChassisDetail;
@@ -43,11 +43,15 @@ class guide_Control : public apollo::cyber::Component<ChassisDetail> {
   float lookahead_y = 0;
   float err_lat = 0;
   int TrajIndex = 0;
+  const float kp = 0.05;
+  const float ki = 0.01;
+  const float kd = 0.0;
   std::vector<double> trajinfo[INFOLENGTH];
   std::vector<double> current_traj[2];
   std::fstream traj_record_file;
 
   ControlCommand controlcmd;
+  //PID pid_steer;
   float Caculate_steer(const std::shared_ptr<ChassisDetail>& msg0);
   float Caculate_acc(const std::shared_ptr<ChassisDetail>& msg0);
   int FindLookAheadPoint(float LookAheadDis);
