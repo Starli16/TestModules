@@ -47,7 +47,7 @@ class guide_Control : public apollo::cyber::Component<ChassisDetail> {
   const float ki = 0.01;
   const float kd = 0.0;
   std::vector<double> trajinfo[INFOLENGTH];
-  std::vector<double> current_traj[2];
+  std::vector<double> current_traj[4];
   std::fstream traj_record_file;
 
   ControlCommand controlcmd;

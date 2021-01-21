@@ -65,7 +65,7 @@ void guide_Control::UpdateTraj(const std::shared_ptr<ChassisDetail>& msg0) {
   }
   AINFO << "TrajIndex= " << TrajIndex << "  MINDIS=" << min_dis;
   //将该点附近的若干个点加入到自车坐标系中
-  for(int i=0;i<3;i++) current_traj[i].clear();
+  for(int i=0;i<4;i++) current_traj[i].clear();
   for (int i = TrajIndex;
        i < std::min(TrajIndex + TRAJLENGTH, (int)trajinfo[0].size()); i++) {
     double N_point = trajinfo[0][i];
@@ -134,11 +134,13 @@ float guide_Control::Caculate_steer(const std::shared_ptr<ChassisDetail>& msg0) 
   double speed = msg0->x_speed();
   double azimuth = msg0->gps_azimuth()/180*M_PI;
   double acc = msg0->x_acc();
-  double yaw_rate = msg0->follower_yaw_rate();
+  double yaw_rate = msg0->follower_yaw_rate(); //左正右负
   double v_x = msg0->gps_northspeed()*std::cos(azimuth)+msg0->gps_eastspeed()*std::sin(azimuth);
   double v_y = -msg0->gps_northspeed()*std::sin(azimuth)+msg0->gps_eastspeed()*std::cos(azimuth); //左负右正
-  double heading_angle_error = current_traj[2][lookahead_index]/180*M_PI - azimuth; 
-  double curviture = current_traj[3][lookahead_index];
+  double heading_angle_error = current_traj[2][lookahead_index]/180*M_PI - azimuth; //左负右正 [-PI,PI]
+  if( heading_angle_error > M_PI) heading_angle_error = heading_angle_error-2*M_PI;
+  else if( heading_angle_error < -M_PI) heading_angle_error = heading_angle_error+ 2*M_PI;
+  double curviture = current_traj[3][lookahead_index]; 
   //横向速度需要估计
   
   // pure pursuit delta = atan(2*L*e_y/l_d^2)
