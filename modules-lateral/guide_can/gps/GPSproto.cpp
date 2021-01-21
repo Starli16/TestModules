@@ -14,12 +14,16 @@ bool GPSinfo::GetGPSinfo(char *s) {
 }
 bool GPSinfo::GetGPSinfo(string s) {
 	if(s=="") return false;
-	GPSString = s;
-	int index=GPSString.find(";", 0);
+	int index_l= GPSString.find("#INSPVAA", 0);
+	int index=GPSString.find(";", index_l);
+	int index_r = GPSString.find("*", index);
+	if (index_l == -1 || index==-1 || index_r==-1) {
+		return false;
+	}
 	string Head, Info;
-	Head = GPSString.substr(0, index);
+	Head = GPSString.substr(index_l, index);
 	//cout << Head << endl;
-	Info = GPSString.substr(index + 1)+",";
+	Info = GPSString.substr(index + 1, index_r-1)+",";
 	//cout << Info << endl;
 	int position = 0;
 	int count = 2;
@@ -31,9 +35,6 @@ bool GPSinfo::GetGPSinfo(string s) {
 		position = temppos + 1;
 		count++;
 	}
-	index = GPSsubstr[13].find("*", 0);
-	GPSsubstr[14] = GPSsubstr[13].substr(index+1);
-	GPSsubstr[13] = GPSsubstr[13].substr(0,index);
 	//for(int i=2;i<=count;i++)	cout << GPSsubstr[i] << endl;
 	Longitude = atof(GPSsubstr[5].data());
 	Latitude = atof(GPSsubstr[4].data());

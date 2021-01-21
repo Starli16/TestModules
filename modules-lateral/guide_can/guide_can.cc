@@ -98,6 +98,8 @@ bool guide_Canbus::UpdateGPSinfo(ChassisDetail &sensordata){
   sensordata.set_gps_latitude(gpsinfo.Latitude);
   sensordata.set_gps_longitude(gpsinfo.Longitude);
   sensordata.set_gps_azimuth(gpsinfo.Azimuth);
+  sensordata.set_gps_northspeed(gpsinfo.NorthSpeed);
+  sensordata.set_gps_eastspeed(gpsinfo.EastSpeed);
   return ret;
 }
 void guide_Canbus::PublishChassisDetail() {

@@ -18,7 +18,7 @@ void guide_Control::ReadTraj() {
   while (traj_record_file.getline(linestr, 500)) {
     std::stringstream ss(linestr);
     std::string csvdata[INFOLENGTH];
-    double gps_latitude, gps_longitude,gps_azimuth;
+    double gps_latitude, gps_longitude,gps_azimuth,curviture;
     for (int i = 0; i < INFOLENGTH; i++) {
       char tempdata[500] = {0};
       ss.getline(tempdata, 500, ',');
@@ -27,11 +27,13 @@ void guide_Control::ReadTraj() {
     gps_latitude = atof(csvdata[1].data());
     gps_longitude = atof(csvdata[2].data());
     gps_azimuth = atof(csvdata[3].data());
+    curviture = atof(csvdata[4].data());
     int size =trajinfo[0].size();
     if(size == 0 || SphereDis(gps_longitude,gps_latitude,trajinfo[1][size-1],trajinfo[0][size-1]) > 0.1){
       trajinfo[0].push_back(gps_latitude);
       trajinfo[1].push_back(gps_longitude);
       trajinfo[2].push_back(gps_azimuth);
+      trajinfo[3].push_back(curviture);
     }
   }
   traj_record_file.close();
@@ -40,6 +42,7 @@ void guide_Control::ReadTraj() {
 void guide_Control::UpdateTraj(const std::shared_ptr<ChassisDetail>& msg0) {
   //将靠近的若干个点转移到车辆的坐标系中
   //寻找轨迹上一段范围内的距离本车最近的点
+  const double distance_gps_to_center = 1;
   double N_now = msg0->gps_latitude();
   double E_now = msg0->gps_longitude();
   double Azi_now = msg0->gps_azimuth() / 180 * M_PI;
@@ -53,7 +56,7 @@ void guide_Control::UpdateTraj(const std::shared_ptr<ChassisDetail>& msg0) {
         SphereDis(E_now, N_now, E_point, N_point);
     double azi =
         SphereAzimuth(E_now, N_now, E_point, N_point);
-    double rel_x = dis * std::cos(azi - Azi_now);
+    double rel_x = dis * std::cos(azi - Azi_now) + distance_gps_to_center ;
     double rel_y = dis * std::sin(azi - Azi_now);
     if (std::abs(rel_x) < min_dis) {
       min_dis = std::abs(rel_x);
@@ -62,20 +65,24 @@ void guide_Control::UpdateTraj(const std::shared_ptr<ChassisDetail>& msg0) {
   }
   AINFO << "TrajIndex= " << TrajIndex << "  MINDIS=" << min_dis;
   //将该点附近的若干个点加入到自车坐标系中
-  for(int i=0;i<2;i++) current_traj[i].clear();
+  for(int i=0;i<3;i++) current_traj[i].clear();
   for (int i = TrajIndex;
        i < std::min(TrajIndex + TRAJLENGTH, (int)trajinfo[0].size()); i++) {
     double N_point = trajinfo[0][i];
     double E_point = trajinfo[1][i];
+    double azi_point = trajinfo[2][i];
+    double curviture= trajinfo[3][i];
     double dis =
         SphereDis(E_now, N_now, E_point, N_point);
     double azi =
         SphereAzimuth(E_now, N_now, E_point, N_point);
-    double rel_x = dis * std::cos(azi - Azi_now);
+    double rel_x = dis * std::cos(azi - Azi_now) + distance_gps_to_center;
     double rel_y = dis * std::sin(azi - Azi_now);
     //AINFO << "Rel_x=" << rel_x << " Rel_y=" << rel_y;
     current_traj[0].push_back(rel_x);
     current_traj[1].push_back(rel_y);
+    current_traj[2].push_back(azi_point);
+    current_traj[3].push_back(curviture);
   }
   std::fstream current_traj_file("/apollo/modules/traj.record",std::ios::out);
   current_traj_file << current_traj[0].size()<<std::endl;
@@ -125,8 +132,13 @@ float guide_Control::Caculate_steer(const std::shared_ptr<ChassisDetail>& msg0) 
   double lateral_error= current_traj[1][lookahead_index];
  
   double speed = msg0->x_speed();
+  double azimuth = msg0->gps_azimuth()/180*M_PI;
   double acc = msg0->x_acc();
   double yaw_rate = msg0->follower_yaw_rate();
+  double v_x = msg0->gps_northspeed()*std::cos(azimuth)+msg0->gps_eastspeed()*std::sin(azimuth);
+  double v_y = -msg0->gps_northspeed()*std::sin(azimuth)+msg0->gps_eastspeed()*std::cos(azimuth); //左负右正
+  double heading_angle_error = current_traj[2][lookahead_index]/180*M_PI - azimuth; 
+  double curviture = current_traj[3][lookahead_index];
   //横向速度需要估计
   
   // pure pursuit delta = atan(2*L*e_y/l_d^2)
@@ -171,14 +183,14 @@ int guide_Control::FindLookAheadPoint(float LookAheadDis) {
   float DisSum = 0;
   int i;
   for (i = 1; i < current_traj[0].size(); i++) {
-    float dis =
-        sqrt((current_traj[0][i] - current_traj[0][i - 1]) * (current_traj[0][i] - current_traj[0][i - 1]) +
-             (current_traj[1][i] - current_traj[1][i - 1]) * (current_traj[1][i] - current_traj[1][i - 1]));
-    DisSum += dis;
-    if (DisSum > LookAheadDis) break;
+    // float dis =
+    //     sqrt((current_traj[0][i] - current_traj[0][i - 1]) * (current_traj[0][i] - current_traj[0][i - 1]) +
+    //          (current_traj[1][i] - current_traj[1][i - 1]) * (current_traj[1][i] - current_traj[1][i - 1]));
+    // DisSum += dis;
+    if (current_traj[0][i] > LookAheadDis) break; // 找第一个纵向距离大于预瞄点的点。
   }
   if(i == current_traj[0].size()){
-	i=i-1;
+	  i = i - 1;
   }
   return i;
 }

@@ -19,4 +19,6 @@ message ChassisDetail{
     optional double gps_longitude = 15;
     optional double gps_latitude = 16;
     optional double gps_azimuth =17;
+    optional double gps_northspeed = 18;
+    optional double gps_eastspeed=19;
 }; 
