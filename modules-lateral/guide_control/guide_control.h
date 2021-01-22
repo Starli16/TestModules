@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <fstream>
+#include <cmath>
 
 #include "controller/PIDcontroller.h"
 #include "cyber/component/component.h"
@@ -60,7 +61,7 @@ class guide_Control : public apollo::cyber::Component<ChassisDetail> {
   void UpdateTraj(const std::shared_ptr<ChassisDetail>& msg0);
   double Curvity(double x1,double y1,double x2,double y2,double x3,double y3);
   struct ConfigInfo {
-
+    double k1,k2,L,kappa,epsilon,m,Iz,Cf,Cr,lf,lr,Delta;
   } configinfo;
 };
 CYBER_REGISTER_COMPONENT(guide_Control)

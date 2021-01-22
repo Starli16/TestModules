@@ -127,14 +127,14 @@ bool guide_Control::Proc(const std::shared_ptr<ChassisDetail>& msg0) {
 }
 
 float guide_Control::Caculate_steer(const std::shared_ptr<ChassisDetail>& msg0) {
-  float frontwheel_steer_angle = 0;
+  float frontwheel_steer_angle = 0; 
   int lookahead_index= FindLookAheadPoint(5);
   double lateral_error= current_traj[1][lookahead_index];
  
-  double speed = msg0->x_speed();
+  double speed = msg0->x_speed(); // m/s
   double azimuth = msg0->gps_azimuth()/180*M_PI;
-  double acc = msg0->x_acc();
-  double yaw_rate = msg0->follower_yaw_rate(); //左正右负
+  double acc = msg0->x_acc(); // m/s^2
+  double yaw_rate = msg0->follower_yaw_rate(); //左正右负 单位 度/s
   double v_x = msg0->gps_northspeed()*std::cos(azimuth)+msg0->gps_eastspeed()*std::sin(azimuth);
   double v_y = -msg0->gps_northspeed()*std::sin(azimuth)+msg0->gps_eastspeed()*std::cos(azimuth); //左负右正
   double heading_angle_error = current_traj[2][lookahead_index]/180*M_PI - azimuth; //左负右正 [-PI,PI]
@@ -143,15 +143,45 @@ float guide_Control::Caculate_steer(const std::shared_ptr<ChassisDetail>& msg0) 
   double curviture = current_traj[3][lookahead_index]; 
   //横向速度需要估计
   
-  // pure pursuit delta = atan(2*L*e_y/l_d^2)
-  
-  frontwheel_steer_angle = std::atan(2*L*lateral_error/(pow(current_traj[0][lookahead_index]+L,2)+pow(current_traj[1][lookahead_index],2)));
-  //static PID pid_steer(0.05,0.00,0.0);
-  //frontwheel_steer_angle = pid_steer.pid_control(0,lateral_error);
-  //static float error_sum = 0;
-  //frontwheel_steer_angle = 0.03 * lateral_error + 0.0001 * error_sum;
-  //rror_sum = error_sum + lateral_error;
+  // 转换成左正右负坐标系,yawrate转换成弧度制
+  v_y=-v_y;//单位m/s  
+  //heading_angle_error=-heading_angle_error;//单位弧度  在左侧为负数，不需要变动
+  //lateral_error=-lateral_error;//单位m 原本在左侧是负，不需要变动
+  yaw_rate=yaw_rate/180*M_PI;
+  //取参数
+  double m=configinfo.m,Iz=configinfo.Iz,Cf=configinfo.Cf,Cr=configinfo.Cr,lf=configinfo.lf,lr=configinfo.lr;
+  double k1=configinfo.k1,k2=configinfo.k2,L=configinfo.L;
+  double kappa=configinfo.kappa,epsilon=configinfo.epsilon,Delta=configinfo.Delta;
+  //计算过程
+  double d_ey=v_y+v_x*heading_angle_error;
+  double d_ephi=yaw_rate-v_x*curviture;
+  double D1=1/ m;
+  double D2=1/ Iz;
+  double C1=2*(Cf + Cr)/std::max(v_x,2.0);
+  double C2=-2*(lf*Cf - lr*Cr)/std::max(v_x,2.0) - m *v_x;
+  double C3=-2*(lf*Cf - lr*Cr)/std::max(v_x,2.0);
+  double C4=-2*(lf*lf*Cf + lr*lr*Cr)/std::max(v_x,2.0);
+  double B1=2*Cf;
+  double B2=2*lf*Cf;
+  double A1= k2;
+  double A2= k1*L;
+  double c= -(k2*v_x + k1*L)*heading_angle_error-k1*lateral_error+k2*L*v_x*curviture;
+  double b= -(k2*v_x + k1*L)*d_ephi-k2*acc*heading_angle_error-k1*d_ey+k2*L*acc*curviture;
+  double beta= A1*v_y + A2*yaw_rate-c;
+  double Bda=B1*D1*A1 + B2*D2*A2;
+  double beta_hat=Bda*beta;
+  double p1=1/Bda*( b - (A1*D1*C1+A2*D2*C3)*v_y - (A1*D1*C2 + A2*D2*C4)*yaw_rate);
+  double p2= -kappa*beta_hat;
+  double mu= beta_hat*Delta;
+  double gamma;
+  if( std::abs(mu) > epsilon ) gamma = 1/std::abs(mu);
+  else gamma=1/epsilon;
+  double p3= -gamma*mu*Delta;
+  frontwheel_steer_angle=p1+p2+p3;
   frontwheel_steer_angle = frontwheel_steer_angle * 180 / 3.14159;
+
+  //前轮转角转换为左负右正
+  frontwheel_steer_angle=-frontwheel_steer_angle;
 
   if (frontwheel_steer_angle > 20)
     frontwheel_steer_angle = 20;
@@ -223,6 +253,18 @@ void guide_Control::ReadConfig() {
       string SettingName;
       f >> SettingName;
       ConfigInfo& x = configinfo;
+      if(SettingName=="k1") {f>>x.k1;AINFO<<"k1="<<x.k1;}
+      else if(SettingName=="k2"){f>>x.k2;AINFO<<"k2="<<x.k2;}
+      else if(SettingName=="L"){f>>x.L;AINFO<<"L="<<x.L;}
+      else if(SettingName=="kappa"){f>>x.kappa;AINFO<<"kappa="<<x.kappa;}
+      else if(SettingName=="epsilon"){f>>x.epsilon;AINFO<<"epsilon="<<x.epsilon;}
+      else if(SettingName=="m"){f>>x.m;AINFO<<"m="<<x.m;}
+      else if(SettingName=="Iz"){f>>x.Iz;AINFO<<"Iz="<<x.Iz;}
+      else if(SettingName=="Cf"){f>>x.Cf;AINFO<<"Cf="<<x.Cf;}
+      else if(SettingName=="Cr"){f>>x.Cr;AINFO<<"Cr="<<x.Cr;}
+      else if(SettingName=="lf"){f>>x.lf;AINFO<<"lf="<<x.lf;}
+      else if(SettingName=="lr"){f>>x.lr;AINFO<<"lr="<<x.lr;}
+      else if(SettingName=="Delta"){f>>x.Delta;AINFO<<"Delta="<<x.Delta;}
     }
   }
 }
