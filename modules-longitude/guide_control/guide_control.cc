@@ -59,7 +59,6 @@ bool guide_Control::Init() {
 */
 
 bool guide_Control::Proc(const std::shared_ptr<ChassisDetail>& msg0) {
-  UpdateTraj(msg0);
 
   // calculate steer
   // control_steer = Caculate_steer(msg0);

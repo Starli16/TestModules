@@ -55,7 +55,6 @@ class guide_Control : public apollo::cyber::Component<ChassisDetail> {
   float Caculate_acc(const std::shared_ptr<ChassisDetail>& msg0);
   void ReadConfig();
   void ReadTraj();
-  void UpdateTraj(const std::shared_ptr<ChassisDetail>& msg0);
   double Curvity(double x1,double y1,double x2,double y2,double x3,double y3);
   struct ConfigInfo {
     double InitDistance;
