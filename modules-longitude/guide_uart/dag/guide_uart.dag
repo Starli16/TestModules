@@ -1,0 +1,11 @@
+# Define all coms in DAG streaming.
+    module_config {
+    module_library : "/apollo/bazel-bin/modules/guide_uart/guide_uart.so"
+    timer_components {
+        class_name : "guide_Uart"
+        config {
+            name : "guide_Uart"
+            interval :500
+        }
+      }
+    }
