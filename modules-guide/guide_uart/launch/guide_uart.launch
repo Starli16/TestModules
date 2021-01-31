@@ -1,0 +1,7 @@
+<cyber>
+    <module>
+        <name>guide_uart</name>
+        <dag_conf>/apollo/modules/guide_uart/dag/guide_uart.dag</dag_conf>
+        <process_name>guide_uart</process_name>
+    </module>
+</cyber>
