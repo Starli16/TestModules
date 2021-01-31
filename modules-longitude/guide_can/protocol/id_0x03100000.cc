@@ -35,9 +35,10 @@ void Id0x03100000::Parse(const std::uint8_t* bytes, int32_t length,
   if (bytes[0] == 0xA2) {
     chassis->set_leader_speed(leader_speed(bytes, length));
     chassis->set_leader_acc(leader_acc(bytes, length));
-  } else if (bytes[0] == 0xA7) {
+  }else if (bytes[0] == 0xA7) {
     chassis->set_leader_brake_pedal(leader_brake_pedal(bytes, length));
     chassis->set_leader_acc_pedal(leader_acc_pedal(bytes, length));
+    chassis->set_leader_steer(leader_steer(bytes,length));
   }
 }
 
@@ -100,6 +101,19 @@ double Id0x03100000::leader_acc_pedal(const std::uint8_t* bytes,
   x |= t;
 
   double ret = x;
+  return ret;
+}
+double Id0x03100000::leader_steer(const std::uint8_t* bytes,
+                                      int32_t length) const {
+  Byte t0(bytes + 6);
+  int16_t x = t0.get_byte(0, 8);
+
+  Byte t1(bytes + 5);
+  int16_t t = t1.get_byte(0, 8);
+  x <<= 8;
+  x |= t;
+
+  double ret = 0.1 * x;
   return ret;
 }
 

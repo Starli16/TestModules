@@ -46,6 +46,7 @@ class Id0x03100000 : public ::apollo::drivers::canbus::ProtocolData<
                             const int32_t length) const;
   double leader_acc_pedal(const std::uint8_t* bytes,
                           const int32_t length) const;
+  double leader_steer(const std::uint8_t* bytes,int32_t length) const;
 };
 
 }  // namespace guide

@@ -41,12 +41,12 @@ void Id0x18f02502::Parse(const std::uint8_t* bytes, int32_t length,
 // 'double', 'order': 'intel', 'physical_unit': 'deg'}
 double Id0x18f02502::pedal_acc(const std::uint8_t* bytes,
                                int32_t length) const {
-  Byte t0(bytes + 1);
+  Byte t0(bytes + 3);
   int32_t x = t0.get_byte(0, 8);
 
-  Byte t1(bytes + 0);
+  Byte t1(bytes + 2);
   int32_t t = t1.get_byte(0, 8);
-  t <<= 8;
+  x <<= 8;
   x |= t;
 
   double ret = x * 1.0;
@@ -58,12 +58,12 @@ double Id0x18f02502::pedal_acc(const std::uint8_t* bytes,
 // 'type': 'double', 'order': 'intel', 'physical_unit': 'deg'}
 double Id0x18f02502::pedal_brake(const std::uint8_t* bytes,
                                  int32_t length) const {
-  Byte t0(bytes + 3);
+  Byte t0(bytes + 1);
   int32_t x = t0.get_byte(0, 8);
 
-  Byte t1(bytes + 2);
+  Byte t1(bytes + 0);
   int32_t t = t1.get_byte(0, 8);
-  t <<= 8;
+  x <<= 8;
   x |= t;
 
   double ret = x * 1.0;
